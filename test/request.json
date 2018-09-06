@@ -1,0 +1,10 @@
+{
+  "config": {
+      "encoding":"LINEAR16",
+      "sample_rate": 16000,
+      "language_code": "ja-JP"
+  },
+  "audio": {
+      "uri":"gs://maildevice/test.wav"
+  }
+}
