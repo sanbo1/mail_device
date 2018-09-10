@@ -13,3 +13,6 @@ sudo apt-get install python-pyaudio
 #初回トークン作成時は python アプリを --noauth_local_webserver オプションを付けて起動
 #表示される URL を別マシンのブラウザでアクセスして承認、表示される ID をアプリを起動した
 #マシンに入力してトークンを取得する
+
+#自動起動について
+http://hendigi.karaage.xyz/2016/11/auto-boot/

@@ -9,13 +9,11 @@ from my_modules.gcp.gmail import GmailClient
 from my_modules.gcp.gspeech import GspeechClient
 
 script_dir =os.path.abspath(os.path.dirname(__file__))
+
 data_dir = os.path.join(script_dir, "data")
 input_file = os.path.join(data_dir, "input.wav")
 output_file = os.path.join(data_dir, "output.wav")
 
-new_message_flg = False
-
-script_dir =os.path.abspath(os.path.dirname(__file__))
 credential_dir = os.path.join(os.path.join(script_dir, "my_modules/gcp"), ".credentials")
 
 if not os.path.exists(credential_dir):
@@ -44,7 +42,7 @@ GPIO.setup(GPIO_BTN2, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 #def ovserve_message_send_btn(Gmail, Gspeech, MyAudio):
 def ovserve_message_send_btn(gpio_pin):
-    print("ovserve_message_send_btn start")
+    #print("ovserve_message_send_btn start")
     #Gmail クラス生成
     Gmail = GmailClient(TARGET_ADDR)
     #Google Speech to Text / Text to Speech クラス生成
@@ -63,9 +61,9 @@ def ovserve_message_send_btn(gpio_pin):
     speech_text = Gspeech.get_speech_to_text(input_file)
     if speech_text == "":
         pass
-        print("not in message")
+        #print("not in message")
     else:
-        print(speech_text.encode('utf-8'))
+        #print(speech_text.encode('utf-8'))
 
         #メール送信
         Gmail.send_message(speech_text)
@@ -74,14 +72,14 @@ def ovserve_message_send_btn(gpio_pin):
     time.sleep(1)
 
 #コールバック登録ができるのは１つまで
-def ovserve_message_read_btn(Gmail, Gspeech, MyAudio):
+def ovserve_message_read_btn(e, Gmail, Gspeech, MyAudio):
 #def ovserve_message_read_btn(gpio_pin):
-    print("ovserve_message_read_btn start")
+    #print("ovserve_message_read_btn start")
 
     while True:
-        print("start")
+        #print("start")
         GPIO.wait_for_edge(GPIO_BTN2, GPIO.RISING)
-        print("end")
+        #print("end")
         #if GPIO.input(GPIO_BTN2):
         #    # HIGHの場合
         #    print("HIGH")
@@ -90,7 +88,7 @@ def ovserve_message_read_btn(Gmail, Gspeech, MyAudio):
         #    # LOWの場合
         #    print("LOW")
         #新メッセージ再生
-        new_message_flg = False
+        e.set()
         GPIO.output(GPIO_LED2,GPIO.LOW)
         MyAudio.play(output_file)
 
@@ -99,17 +97,24 @@ def ovserve_message_read_btn(Gmail, Gspeech, MyAudio):
 
 
 
-def ovserve_new_message(Gmail, Gspeech, MyAudio):
-    print("ovserve_new_message start")
+def ovserve_new_message(e, Gmail, Gspeech, MyAudio):
+    #print("ovserve_new_message start")
+
+    e.set()
 
     last_message = ""
     while True:
         #
         #メール受信
         #
+        #テスト用にメッセージ取得時に一瞬光るようにする
         mail_text = Gmail.get_new_message()
+        GPIO.output(GPIO_LED2,GPIO.HIGH)
+        if e.isSet():
+            time.sleep(0.1)
+            GPIO.output(GPIO_LED2,GPIO.LOW)
         #print(type(mail_text))
-        print(mail_text)
+        #print(mail_text)
 
         #既読の判断
         if not (last_message == "" or last_message == mail_text):
@@ -119,7 +124,7 @@ def ovserve_new_message(Gmail, Gspeech, MyAudio):
             Gspeech.get_text_to_speech(mail_text, output_file)
 
             #新メッセージ受信通知
-            new_message_flg = True
+            e.clear()
             GPIO.output(GPIO_LED2,GPIO.HIGH)
 
             #再生
@@ -137,6 +142,8 @@ def ovserve_new_message(Gmail, Gspeech, MyAudio):
 
 
 def main():
+    time.sleep(10)
+
     #Gmail クラス生成
     Gmail = GmailClient(TARGET_ADDR)
     #Google Speech to Text / Text to Speech クラス生成
@@ -158,12 +165,14 @@ def main():
         #GPIO.output(GPIO_LED1,GPIO.LOW)
         #time.sleep(0.1)
 
-        thread_1 = threading.Thread(target=ovserve_message_read_btn, args=(Gmail, Gspeech, MyAudio,))
+        e = threading.Event()
+
+        thread_1 = threading.Thread(target=ovserve_message_read_btn, args=(e, Gmail, Gspeech, MyAudio,))
         # thread_1をデーモンに設定する。メインスレッドが終了すると、デーモンスレッドは一緒に終了する
         thread_1.setDaemon(True)
         thread_1.start()
 
-        thread_2 = threading.Thread(target=ovserve_new_message, args=(Gmail, Gspeech, MyAudio,))
+        thread_2 = threading.Thread(target=ovserve_new_message, args=(e, Gmail, Gspeech, MyAudio,))
         # thread_2をデーモンに設定する。メインスレッドが終了すると、デーモンスレッドは一緒に終了する
         thread_2.setDaemon(True)
         thread_2.start()
