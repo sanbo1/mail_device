@@ -28,6 +28,7 @@ class GmailClient(object):
     #CLIENT_SECRET_FILE = 'client_secret.json'
     CLIENT_SECRET_FILE = 'maildeviceclient_secret.json'
     APPLICATION_NAME = 'Gmail Client'
+    TARGET_SUBJECT = "gmail api test"
 
     def __init__(self, mailaddr):
         script_dir =os.path.abspath(os.path.dirname(__file__))
@@ -119,7 +120,7 @@ class GmailClient(object):
             cnt = 0
             for message in messages:
                 #print(message.subject)
-                if message.subject == "Re: gmail api test":
+                if message.subject == "Re: " + self.TARGET_SUBJECT:
                     #print(message.body)
                     return message.body
                 else:
@@ -129,7 +130,7 @@ class GmailClient(object):
         message = MIMEText(mail_str, 'plain', 'utf-8')    # 'plain' は JIS エンコード(iso-2022-jp) の意味(引数はutf-8をplainに変換)
         message["from"] = self.MAIL_FROM
         message["to"] = self.MAIL_TO
-        message["subject"] = "gmail api test"
+        message["subject"] = self.TARGET_SUBJECT
         message["Date"] = formatdate(localtime=True)
 
         byte_msg = message.as_string().encode(encoding="UTF-8")
