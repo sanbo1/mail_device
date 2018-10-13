@@ -12,7 +12,12 @@ from oauth2client import client
 from oauth2client import tools
 
 from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.mime.audio import MIMEAudio
+from email.mime.image import MIMEImage
+from email.mime.base import MIMEBase
 from email.utils import formatdate
+import mimetypes
 import traceback
 
 try:
@@ -147,7 +152,70 @@ class GmailClient(object):
         try:
             result = service.users().messages().send(
                 userId=self.MAIL_FROM,
-                body=self.create_message(speech_text.encode('utf-8'))
+                #body=self.create_message(speech_text.encode('utf-8'))
+                body=self.create_message(speech_text)
+            ).execute()
+
+            print("Message Id: {}".format(result["id"]))
+
+        except apiclient.errors.HttpError:
+            print("------start trace------")
+            traceback.print_exc()
+            print("------end trace------")
+
+
+    def create_attached_message(self, mail_str, attach_file):
+        message = MIMEMultipart()
+        message["from"] = self.MAIL_FROM
+        message["to"] = self.MAIL_TO
+        message["subject"] = self.TARGET_SUBJECT
+        message["Date"] = formatdate(localtime=True)
+
+        msg = MIMEText(mail_str, 'plain', 'utf-8')    # 'plain' は JIS エンコード(iso-2022-jp) の意味(引数はutf-8をplainに変換)
+        message.attach(msg)
+
+        content_type, encoding = mimetypes.guess_type(attach_file)
+
+        if content_type is None or encoding is not None:
+          content_type = 'application/octet-stream'
+        main_type, sub_type = content_type.split('/', 1)
+        print(main_type)
+        if main_type == 'text':
+          fp = open(attach_file, 'rb')
+          msg = MIMEText(fp.read(), _subtype=sub_type)
+          fp.close()
+        elif main_type == 'image':
+          fp = open(attach_file, 'rb')
+          msg = MIMEImage(fp.read(), _subtype=sub_type)
+          fp.close()
+        elif main_type == 'audio':
+          fp = open(attach_file, 'rb')
+          msg = MIMEAudio(fp.read(), _subtype=sub_type)
+          fp.close()
+        else:
+          fp = open(attach_file, 'rb')
+          msg = MIMEBase(main_type, sub_type)
+          msg.set_payload(fp.read())
+          fp.close()
+        filename = os.path.basename(attach_file)
+        msg.add_header('Content-Disposition', 'attachment', filename=filename)
+        message.attach(msg)
+
+        byte_msg = message.as_string().encode(encoding="UTF-8")
+        byte_msg_b64encoded = base64.urlsafe_b64encode(byte_msg)
+        str_msg_b64encoded = byte_msg_b64encoded.decode(encoding="UTF-8")
+
+        return {"raw": str_msg_b64encoded}
+
+    def send_attached_message(self, speech_text, attach_file):
+        credentials = self.get_credentials()
+        http = credentials.authorize(httplib2.Http())
+        service = apiclient.discovery.build("gmail", "v1", http=http)
+
+        try:
+            result = service.users().messages().send(
+                userId=self.MAIL_FROM,
+                body=self.create_attached_message(speech_text, attach_file)
             ).execute()
 
             print("Message Id: {}".format(result["id"]))

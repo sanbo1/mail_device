@@ -107,8 +107,9 @@ def ovserve_new_message(e, Gmail, Gspeech, MyAudio):
         #
         #メール受信
         #
+        #メッセージ本文は不要な改行を削除してUTF8にエンコード
+        mail_text = Gmail.get_new_message().strip().encode('utf-8')
         #テスト用にメッセージ取得時に一瞬光るようにする
-        mail_text = Gmail.get_new_message()
         GPIO.output(GPIO_LED2,GPIO.HIGH)
         if e.isSet():
             time.sleep(0.1)
@@ -116,26 +117,46 @@ def ovserve_new_message(e, Gmail, Gspeech, MyAudio):
         #print(type(mail_text))
         #print(mail_text)
 
-        #既読の判断
-        if not (last_message == "" or last_message == mail_text):
+        #
+        #メッセージ受信
+        #
+        #起動後の初回処理は音声データの作成は行うが再生は行わない
+        if last_message == "":
+            print(mail_text)
+            #テキストを音声に変換
+            Gspeech.get_text_to_speech(mail_text, output_file)
+            #メッセージを保存
+            last_message = mail_text
+
+        #読み込んだメッセージが前回と同じなら無視
+        elif last_message == mail_text:
+            pass
+
+        #ヘルプメッセージ
+        elif (mail_text == "Help" or mail_text == "help" or mail_text == "ヘルプ" or mail_text == "へるぷ"):
+            print(mail_text)
+            help_text = "音声ファイル：前回音声認識を行ったときの音声ファイルを添付してメールを送信する"
+            #メール送信
+            Gmail.send_message(help_text)
+
+        #音声ファイル添付
+        elif mail_text == "音声ファイル":
+            print(mail_text)
+            Gmail.send_attached_message("直近の音声", input_file)
+
+        #特定メッセージでなかった場合、メッセージの再生
+        elif not (last_message == "" or last_message == mail_text):
             #
             #テキストを音声に変換
             #
             Gspeech.get_text_to_speech(mail_text, output_file)
-
             #新メッセージ受信通知
             e.clear()
             GPIO.output(GPIO_LED2,GPIO.HIGH)
-
             #再生
             MyAudio.play(output_file)
-        elif last_message == "":
-            #
-            #テキストを音声に変換
-            #
-            Gspeech.get_text_to_speech(mail_text, output_file)
-
-        last_message = mail_text
+            #メッセージを保存
+            last_message = mail_text
 
         #5秒毎
         time.sleep(5)

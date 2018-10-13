@@ -85,7 +85,7 @@ class GspeechClient(object):
 
             print(speech_text.encode('utf-8'))
 
-        return speech_text
+        return speech_text.encode('utf-8')
 
 
     #テキストを音声に変換
@@ -100,7 +100,8 @@ class GspeechClient(object):
                     'text': speech_text
                     },
                 'voice': {
-                    'languageCode': 'ja-JP', #日本語に設定
+                    'languageCode': 'ja-JP',           #日本語に設定
+                    'name':         'ja-JP-Wavenet-A', #Wave-Net(高音質版を指定)
                 },
                 'audioConfig': {
                     'audioEncoding': 'LINEAR16',
