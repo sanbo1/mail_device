@@ -22,7 +22,6 @@ if not os.path.exists(credential_dir):
 #メールアドレスを読み込み
 rf = open(os.path.join(credential_dir, "mail_to"), 'r')
 TARGET_ADDR = rf.read().strip()
-#TARGET_ADDR = "snb.hokama@gmail.com"
 rf.close()
 
 GPIO_BTN1 = 17
