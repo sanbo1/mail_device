@@ -116,6 +116,32 @@ class GspeechClient(object):
         rf.close()
 
 
+    #テキストを音声に変換
+    def get_text_to_en_speech(self, speech_text, file_name):
+        rf = open(file_name, 'w')
+
+        #音声合成
+        tospeech = get_texttospeech_service(self.KEY)
+        service_request = tospeech.text().synthesize(
+            body={
+                'input': {
+                    'text': speech_text
+                    },
+                'voice': {
+                    'languageCode': 'en-US',           #英語に設定
+                },
+                'audioConfig': {
+                    'audioEncoding': 'LINEAR16',
+                    }
+                })
+
+        #SpeechAPIによる認識結果を保存
+        speech_response = service_request.execute()
+
+        wav_response = base64.b64decode(speech_response["audioContent"])
+        rf.write(wav_response)
+        rf.close()
+
 
 
 

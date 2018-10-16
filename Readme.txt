@@ -4,7 +4,7 @@ https://qiita.com/anqooqie/items/110957797b3d5280c44f
 https://qiita.com/ndxbn/items/f124d2b183b60cb074e2
 
 #google api client & oauth client
-pip install --upgrade google-api-python-client oauth2client
+pip install --upgrade google-api-python-client oauth2client requests
 
 #PyAudio -> Pythonでの録音・再生
 sudo apt-get install python-pyaudio

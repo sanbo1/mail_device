@@ -7,6 +7,7 @@ import RPi.GPIO as GPIO  #GPIOにアクセスするライブラリをimport
 from my_modules.audio import MyAudioClient
 from my_modules.gcp.gmail import GmailClient
 from my_modules.gcp.gspeech import GspeechClient
+from my_modules.gcp.gtranslation import GtranslationClient
 
 script_dir =os.path.abspath(os.path.dirname(__file__))
 
@@ -61,8 +62,20 @@ def ovserve_message_send_btn(gpio_pin):
     if speech_text == "":
         pass
         #print("not in message")
+
+    #先頭5文字(15byte)が"英語に翻訳"の場合、翻訳して音声再生
+    elif speech_text[0:15] == "英語に翻訳":
+        #Translation クラス生成
+        Gtranslation = GtranslationClient()
+        mail_text = Gtranslation.get_text_jp_to_en(speech_text[15:-1])
+
+        #テキストを音声に変換
+        Gspeech.get_text_to_en_speech(mail_text, output_file)
+        #再生
+        MyAudio.play(output_file)
+
     else:
-        #print(speech_text.encode('utf-8'))
+        #print(speech_text)
 
         #メール送信
         Gmail.send_message(speech_text)
