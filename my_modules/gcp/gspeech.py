@@ -117,7 +117,7 @@ class GspeechClient(object):
 
 
     #テキストを音声に変換
-    def get_text_to_en_speech(self, speech_text, file_name):
+    def get_text_to_other_speech(self, speech_text, file_name, language, voice_name):
         rf = open(file_name, 'w')
 
         #音声合成
@@ -128,7 +128,9 @@ class GspeechClient(object):
                     'text': speech_text
                     },
                 'voice': {
-                    'languageCode': 'en-US',           #英語に設定
+                    #'languageCode': 'en-US',           #英語に設定
+                    'languageCode': language,
+                    'name':         voice_name
                 },
                 'audioConfig': {
                     'audioEncoding': 'LINEAR16',
@@ -141,6 +143,44 @@ class GspeechClient(object):
         wav_response = base64.b64decode(speech_response["audioContent"])
         rf.write(wav_response)
         rf.close()
+
+    #テキストを英語音声に変換
+    def get_text_to_en_speech(self, speech_text, file_name):
+        self.get_text_to_other_speech(speech_text, file_name, 'en-US', 'en-US-Wavenet-A')
+
+    #テキストを韓国語音声に変換
+    def get_text_to_ko_speech(self, speech_text, file_name):
+        self.get_text_to_other_speech(speech_text, file_name, 'ko-KR', 'ko-KR-Wavenet-A')
+
+    #テキストをフランス語音声に変換
+    def get_text_to_fr_speech(self, speech_text, file_name):
+        self.get_text_to_other_speech(speech_text, file_name, 'fr-FR', 'fr-FR-Wavenet-A')
+
+    ##テキストを音声に変換
+    #def get_text_to_en_speech(self, speech_text, file_name):
+    #    rf = open(file_name, 'w')
+
+    #    #音声合成
+    #    tospeech = get_texttospeech_service(self.KEY)
+    #    service_request = tospeech.text().synthesize(
+    #        body={
+    #            'input': {
+    #                'text': speech_text
+    #                },
+    #            'voice': {
+    #                'languageCode': 'en-US',           #英語に設定
+    #            },
+    #            'audioConfig': {
+    #                'audioEncoding': 'LINEAR16',
+    #                }
+    #            })
+
+    #    #SpeechAPIによる認識結果を保存
+    #    speech_response = service_request.execute()
+
+    #    wav_response = base64.b64decode(speech_response["audioContent"])
+    #    rf.write(wav_response)
+    #    rf.close()
 
 
 

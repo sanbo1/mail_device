@@ -3,6 +3,7 @@ import os
 import time
 import threading
 import RPi.GPIO as GPIO  #GPIOにアクセスするライブラリをimport
+import shutil
 
 from my_modules.audio import MyAudioClient
 from my_modules.gcp.gmail import GmailClient
@@ -13,6 +14,7 @@ script_dir =os.path.abspath(os.path.dirname(__file__))
 
 data_dir = os.path.join(script_dir, "data")
 input_file = os.path.join(data_dir, "input.wav")
+input_tmp_file = os.path.join(data_dir, "input_tmp.wav")
 output_file = os.path.join(data_dir, "output.wav")
 
 credential_dir = os.path.join(os.path.join(script_dir, "my_modules/gcp"), ".credentials")
@@ -52,13 +54,13 @@ def ovserve_message_send_btn(gpio_pin):
 
     #録音
     GPIO.output(GPIO_LED1,GPIO.HIGH)
-    MyAudio.rec(input_file)
+    MyAudio.rec(input_tmp_file)
     GPIO.output(GPIO_LED1,GPIO.LOW)
 
     #
     #音声をテキストに変換
     #
-    speech_text = Gspeech.get_speech_to_text(input_file)
+    speech_text = Gspeech.get_speech_to_text(input_tmp_file)
     if speech_text == "":
         pass
         #print("not in message")
@@ -74,11 +76,36 @@ def ovserve_message_send_btn(gpio_pin):
         #再生
         MyAudio.play(output_file)
 
+    #先頭6文字(18byte)が"韓国語に翻訳"の場合、翻訳して音声再生
+    elif speech_text[0:18] == "韓国語に翻訳":
+        #Translation クラス生成
+        Gtranslation = GtranslationClient()
+        mail_text = Gtranslation.get_text_jp_to_ko(speech_text[18:-1])
+
+        #テキストを音声に変換
+        Gspeech.get_text_to_ko_speech(mail_text, output_file)
+        #再生
+        MyAudio.play(output_file)
+
+    #先頭8文字(24byte)が"フランス語に翻訳"の場合、翻訳して音声再生
+    elif speech_text[0:24] == "フランス語に翻訳":
+        #Translation クラス生成
+        Gtranslation = GtranslationClient()
+        mail_text = Gtranslation.get_text_jp_to_fr(speech_text[24:-1])
+
+        #テキストを音声に変換
+        Gspeech.get_text_to_fr_speech(mail_text, output_file)
+        #再生
+        MyAudio.play(output_file)
+
     else:
         #print(speech_text)
 
         #メール送信
         Gmail.send_message(speech_text)
+
+        #テキスト変換ができたら保存
+        shutil.copyfile(input_tmp_file, input_file)
 
     #1秒毎
     time.sleep(1)
@@ -115,6 +142,7 @@ def ovserve_new_message(e, Gmail, Gspeech, MyAudio):
     e.set()
 
     last_message = ""
+    #last_special_message = ""
     while True:
         #
         #メール受信
@@ -133,28 +161,37 @@ def ovserve_new_message(e, Gmail, Gspeech, MyAudio):
         #メッセージ受信
         #
         #起動後の初回処理は音声データの作成は行うが再生は行わない
+        #if last_message == "" and last_special_message == "":
         if last_message == "":
             print(mail_text)
             #テキストを音声に変換
             Gspeech.get_text_to_speech(mail_text, output_file)
             #メッセージを保存
             last_message = mail_text
+            #last_special_message = mail_text
 
         #読み込んだメッセージが前回と同じなら無視
+        #elif last_message == mail_text or last_special_message == mail_text:
         elif last_message == mail_text:
             pass
 
         #ヘルプメッセージ
-        elif (mail_text == "Help" or mail_text == "help" or mail_text == "ヘルプ" or mail_text == "へるぷ"):
+        #elif (mail_text == "Help" or mail_text == "help" or mail_text == "ヘルプ" or mail_text == "へるぷ") and not (last_special_message == mail_text):
+        elif (mail_text == "Help" or mail_text == "help" or mail_text == "ヘルプ" or mail_text == "へるぷ") and not (last_message == mail_text):
             print(mail_text)
             help_text = "音声ファイル：前回音声認識を行ったときの音声ファイルを添付してメールを送信する"
             #メール送信
             Gmail.send_message(help_text)
+            #last_special_message = mail_text
+            last_message = mail_text
 
         #音声ファイル添付
-        elif mail_text == "音声ファイル":
+        #elif (mail_text == "音声ファイル") and not (last_special_message == mail_text):
+        elif (mail_text == "音声ファイル") and not (last_message == mail_text):
             print(mail_text)
             Gmail.send_attached_message("直近の音声", input_file)
+            #last_special_message = mail_text
+            last_message = mail_text
 
         #特定メッセージでなかった場合、メッセージの再生
         elif not (last_message == "" or last_message == mail_text):

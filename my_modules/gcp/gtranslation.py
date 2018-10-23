@@ -42,7 +42,7 @@ class GtranslationClient(object):
         rf.close()
 
     #日本語テキストを英語テキストに変換
-    def get_text_jp_to_en(self, speech_text):
+    def get_gtranslation_text(self, speech_text, source, target):
         #翻訳
         translation = get_translation_service(self.KEY)
         print(speech_text)
@@ -53,8 +53,8 @@ class GtranslationClient(object):
 
         payload={
                 'q': speech_text,
-                'source': 'ja',
-                'target': 'en',
+                'source': source,
+                'target': target,
                 'format': 'text'
             }
         translation_response = requests.post(service_request.uri, params=payload)
@@ -64,6 +64,42 @@ class GtranslationClient(object):
         print(res_text)
 
         return res_text
+
+    #日本語テキストを英語テキストに変換
+    def get_text_jp_to_en(self, speech_text):
+        return self.get_gtranslation_text(speech_text, 'ja', 'en')
+
+    #日本語テキストを韓国語テキストに変換
+    def get_text_jp_to_ko(self, speech_text):
+        return self.get_gtranslation_text(speech_text, 'ja', 'ko')
+
+    #日本語テキストをフランス語テキストに変換
+    def get_text_jp_to_fr(self, speech_text):
+        return self.get_gtranslation_text(speech_text, 'ja', 'fr')
+
+    ##日本語テキストを英語テキストに変換
+    #def get_text_jp_to_en(self, speech_text):
+    #    #翻訳
+    #    translation = get_translation_service(self.KEY)
+    #    print(speech_text)
+
+    #    #URLの取得
+    #    service_request = translation.translations().translate(body={})
+    #    print(service_request.uri)
+
+    #    payload={
+    #            'q': speech_text,
+    #            'source': 'ja',
+    #            'target': 'en',
+    #            'format': 'text'
+    #        }
+    #    translation_response = requests.post(service_request.uri, params=payload)
+
+    #    res_json = json.loads(translation_response.text)
+    #    res_text = res_json['data']['translations'][0]['translatedText']
+    #    print(res_text)
+
+    #    return res_text
 
 
 
